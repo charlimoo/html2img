@@ -1,13 +1,11 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, jsonify
 from html2image import Html2Image
-import os
+from PIL import Image
+import io
+import base64
 import uuid
 
 app = Flask(__name__)
-
-# Ensure a temp directory exists for storing images
-TEMP_DIR = "temp_images"
-os.makedirs(TEMP_DIR, exist_ok=True)
 
 @app.route('/convert', methods=['POST'])
 def convert_html_to_image():
@@ -20,16 +18,21 @@ def convert_html_to_image():
         if not html_content:
             return jsonify({"error": "Missing 'html' field"}), 400
 
-        # Generate a unique filename
+        # Generate a unique filename in memory
         filename = f"{uuid.uuid4().hex}.png"
-        image_path = os.path.join(TEMP_DIR, filename)
 
-        # Convert HTML to image using "chrome" browser
-        hti = Html2Image(output_path=TEMP_DIR, browser="chrome")
-        hti.screenshot(html_str=html_content, save_as=filename, size=(width, height))
+        # Convert HTML to image (temporary file stored in RAM)
+        hti = Html2Image(browser="chrome")
+        temp_path = hti.screenshot(html_str=html_content, save_as=filename, size=(width, height))
 
-        # Return the image
-        return send_file(image_path, mimetype='image/png')
+        # Read the image into memory
+        with open(temp_path[0], "rb") as image_file:
+            image_bytes = image_file.read()
+
+        # Convert to Base64
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        return jsonify({"image_base64": image_base64})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
