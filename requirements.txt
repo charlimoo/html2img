@@ -2,3 +2,4 @@ flask
 html2image
 pillow
 gunicorn
+selenium
