@@ -1,5 +1,5 @@
 flask
-html2image
+beautifulsoup4
 pillow
 gunicorn
 selenium
